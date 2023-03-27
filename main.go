@@ -21,15 +21,6 @@ var dataBukuArr = []Book{
 	{2, "Bahasa Indonesia", "Susanti", "Buku Bhs.Indonesia"},
 }
 
-// //Init variable
-// func InitBooks() []Book {
-// 	dataBukuArr := []Book{
-// 		{1, "Matematika", "Upin", "Buku matematika"},
-// 		{2, "Bahasa Indonesia", "Susanti", "Buku Bhs.Indonesia"},
-// 	}
-// 	return nilaiMhsarr
-// }
-
 func incrementID(ID *int) {
 	*ID = dataBukuArr[len(dataBukuArr)-1].ID + 1
 }
@@ -37,7 +28,8 @@ func RemoveData(s []Book, index int) []Book {
 	return append(s[:index], s[index+1:]...)
 }
 
-func getAllBooks(w http.ResponseWriter, r *http.Request) {
+func getPostBook(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	if r.Method == "GET" {
 		books := dataBukuArr
 		dataBuku, err := json.Marshal(books)
@@ -45,19 +37,36 @@ func getAllBooks(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
-
-		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		w.Write(dataBuku)
 		return
 	}
+	if r.Method == "POST" {
+		var buku Book
+		if r.Header.Get("Content-Type") == "application/json" {
+			decodeJSON := json.NewDecoder(r.Body)
+			if err := decodeJSON.Decode(&buku); err != nil {
+				log.Fatal(err)
+			}
+		} else {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		incrementID(&buku.ID)
+		dataBukuArr = append(dataBukuArr, buku)
+		json.NewEncoder(w).Encode("Created")
+		return
+	}
+
 	http.Error(w, "NOT FOUND", http.StatusMethodNotAllowed)
+	return
 }
 
 func ById(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var index int
-	param := strings.TrimPrefix(r.URL.Path, "/book/")
+	param := strings.TrimPrefix(r.URL.Path, "/books/")
 	id, err := strconv.Atoi(param)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -69,11 +78,6 @@ func ById(w http.ResponseWriter, r *http.Request) {
 			if buku.ID == id {
 				book = buku
 			}
-		}
-		if index == 0 {
-			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode("Id book : " + param + " Not Found")
-			return
 		}
 		dataBuku, err := json.Marshal(book)
 		if err != nil {
@@ -94,17 +98,17 @@ func ById(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		w.WriteHeader(http.StatusOK)
 		for ind, item := range dataBukuArr {
 			if item.ID == id {
 				index = ind
 			}
 		}
 		if index == 0 {
-			w.WriteHeader(http.StatusOK)
+			w.WriteHeader(http.StatusNotFound)
 			json.NewEncoder(w).Encode("Id book : " + param + " Not Found")
 			return
 		}
+		w.WriteHeader(http.StatusOK)
 		dataBukuArr[index].Author = buku.Author
 		dataBukuArr[index].Title = buku.Title
 		dataBukuArr[index].Desc = buku.Desc
@@ -118,7 +122,7 @@ func ById(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		if index == 0 {
-			w.WriteHeader(http.StatusOK)
+			w.WriteHeader(http.StatusNotFound)
 			json.NewEncoder(w).Encode("Id book : " + param + " Not Found")
 			return
 		}
@@ -131,34 +135,9 @@ func ById(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "NOT FOUND", http.StatusMethodNotAllowed)
 }
 
-func PostBuku(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	var buku Book
-
-	if r.Method == "POST" {
-		if r.Header.Get("Content-Type") == "application/json" {
-			decodeJSON := json.NewDecoder(r.Body)
-			if err := decodeJSON.Decode(&buku); err != nil {
-				log.Fatal(err)
-			}
-		} else {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		w.WriteHeader(http.StatusOK)
-		incrementID(&buku.ID)
-		dataBukuArr = append(dataBukuArr, buku)
-		json.NewEncoder(w).Encode("Created")
-		return
-	}
-
-	http.Error(w, "NOT FOUND", http.StatusMethodNotAllowed)
-	return
-}
 func main() {
-	http.Handle("/book/post", http.HandlerFunc(PostBuku))
-	http.HandleFunc("/book/getAll", getAllBooks)
-	http.HandleFunc("/book/", ById)
+	http.HandleFunc("/books", getPostBook)
+	http.HandleFunc("/books/", ById)
 
 	fmt.Println("server running at http://localhost:8080")
 
