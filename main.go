@@ -70,13 +70,15 @@ func ById(w http.ResponseWriter, r *http.Request) {
 				book = buku
 			}
 		}
+		if index == 0 {
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode("Id book : " + param + " Not Found")
+			return
+		}
 		dataBuku, err := json.Marshal(book)
-
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
-
-		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		w.Write(dataBuku)
 		return
@@ -98,6 +100,11 @@ func ById(w http.ResponseWriter, r *http.Request) {
 				index = ind
 			}
 		}
+		if index == 0 {
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode("Id book : " + param + " Not Found")
+			return
+		}
 		dataBukuArr[index].Author = buku.Author
 		dataBukuArr[index].Title = buku.Title
 		dataBukuArr[index].Desc = buku.Desc
@@ -110,8 +117,12 @@ func ById(w http.ResponseWriter, r *http.Request) {
 				index = ind
 			}
 		}
+		if index == 0 {
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode("Id book : " + param + " Not Found")
+			return
+		}
 		dataBukuArr = RemoveData(dataBukuArr, index)
-		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode("Deleted")
 		return
