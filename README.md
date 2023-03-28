@@ -1,2 +1,2 @@
 # golang-dts
-Learning Golang with DTS Hacktiv8
+Assignment 6 without gin framework
