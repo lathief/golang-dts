@@ -1,2 +1,2 @@
 # golang-dts
-Learning Golang with DTS Hacktiv8
+Project 2 with gorm without gin
