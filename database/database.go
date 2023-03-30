@@ -50,7 +50,7 @@ func GetBooksByID(db *gorm.DB, index string) (model.Book, error) {
 		return book, nil
 	}
 }
-func CreateBook(db *gorm.DB, insertBook model.Book) error {
+func CreateBook(db *gorm.DB, insertBook *model.Book) error {
 	if err := db.Create(&insertBook).Error; err != nil {
 		return err
 	} else {
