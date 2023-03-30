@@ -19,14 +19,25 @@ var dataBukuArr = []model.Book{}
 func getPostBook(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method == "GET" {
+		var bookResponse []model.BookResponse
 		books, err := database.GetAllBooks(db)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
-		dataBuku, err := json.Marshal(books)
+		for _, item := range books {
+			bookResponse = append(bookResponse, model.BookResponse{
+				ID:        item.ID,
+				Name_Book: item.Name_Book,
+				Author:    item.Author,
+				CreatedAt: item.CreatedAt,
+				UpdatedAt: item.UpdatedAt,
+			})
+		}
+		dataBuku, err := json.Marshal(bookResponse)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
+
 		w.WriteHeader(http.StatusOK)
 		w.Write(dataBuku)
 		return
@@ -34,6 +45,7 @@ func getPostBook(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		var buku model.Book
 		var bukureq model.BookRequest
+		var bukures model.BookResponse
 		if r.Header.Get("Content-Type") == "application/json" {
 			decodeJSON := json.NewDecoder(r.Body)
 			if err := decodeJSON.Decode(&bukureq); err != nil {
@@ -45,11 +57,16 @@ func getPostBook(w http.ResponseWriter, r *http.Request) {
 		}
 		buku.Author = bukureq.Author
 		buku.Name_Book = bukureq.Name_Book
-		if err := database.CreateBook(db, buku); err != nil {
+		if err := database.CreateBook(db, &buku); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode("Created")
+		w.WriteHeader(http.StatusCreated)
+		bukures.Author = buku.Author
+		bukures.Name_Book = buku.Name_Book
+		bukures.ID = buku.ID
+		bukures.CreatedAt = buku.CreatedAt
+		bukures.UpdatedAt = buku.UpdatedAt
+		json.NewEncoder(w).Encode(bukures)
 		return
 	}
 
@@ -63,8 +80,14 @@ func ById(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == "GET" {
 		var book model.Book
+		var bookResponse model.BookResponse
 		book, err := database.GetBooksByID(db, param)
-		dataBuku, err := json.Marshal(book)
+		bookResponse.Author = book.Author
+		bookResponse.Name_Book = book.Name_Book
+		bookResponse.ID = book.ID
+		bookResponse.CreatedAt = book.CreatedAt
+		bookResponse.UpdatedAt = book.UpdatedAt
+		dataBuku, err := json.Marshal(bookResponse)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
@@ -79,6 +102,7 @@ func ById(w http.ResponseWriter, r *http.Request) {
 	}
 	if r.Method == "PUT" {
 		var buku model.Book
+		var bukures model.BookResponse
 		var bukureq model.BookRequest
 		if r.Header.Get("Content-Type") == "application/json" {
 			decodeJSON := json.NewDecoder(r.Body)
@@ -97,7 +121,13 @@ func ById(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode("Updated")
+		buku, _ = database.GetBooksByID(db, param)
+		bukures.Author = buku.Author
+		bukures.Name_Book = buku.Name_Book
+		bukures.ID = buku.ID
+		bukures.CreatedAt = buku.CreatedAt
+		bukures.UpdatedAt = buku.UpdatedAt
+		json.NewEncoder(w).Encode(bukures)
 		return
 	}
 	if r.Method == "DELETE" {
@@ -107,7 +137,9 @@ func ById(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode("Deleted")
+		json.NewEncoder(w).Encode(map[string]string{
+			"message": "Book deleted successfully",
+		})
 		return
 	}
 
